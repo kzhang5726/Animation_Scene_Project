@@ -18,16 +18,22 @@ window.Project_Scene = window.classes.Project_Scene =
                 plane: new Square(),
                 floor: new Square(),
                 target : new Cube(),
+                counter : new Cube(),
                 person: new Shape_From_File("assets/Character.obj"),
                 arrow: new Shape_From_File("assets/Arrow.obj"),
                 crossbow: new Shape_From_File("assets/Merciless_Crossbow.obj"),
             };
             shapes.plane.texture_coords = shapes.plane.texture_coords.map(v => Vec.of(v[0]*5, v[1]));
-            shapes.floor.texture_coords = shapes.floor.texture_coords.map(v => Vec.of(v[0], v[1]));
+            shapes.counter.texture_coords = shapes.counter.texture_coords.map(v => Vec.of(v[0]*15, v[1]));
             this.submit_shapes(context, shapes);
 
             this.materials =
             {
+                ceiling: context.get_instance( Phong_Shader ).material( Color.of( 1 ,1, 1 ,1 ), { ambient: 1 } ),
+                counter: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/brick.jpg", true)}),
+                countertop: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/wood3.jpg", true)}),
                 floor: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
                     {ambient:1, texture: context.get_instance("assets/concrete.jpg", true)}),
                 back_wall: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
@@ -52,6 +58,12 @@ window.Project_Scene = window.classes.Project_Scene =
             this.key_triggered_button("View solar system", ["0"], () => this.attached = () => this.initial_camera_location);
         }
 
+        draw_counter(graphics_state, model_transform){
+            model_transform = model_transform.times(Mat4.translation([0,0,5]));
+            model_transform = model_transform.times(Mat4.rotation(Math.PI/2.5, [1,0,0]));
+            model_transform = model_transform.times(Mat4.scale([30,5,2]));
+            this.shapes.counter.draw(graphics_state, model_transform, this.materials.counter);
+        }
 
         draw_floor(graphics_state, model_transform) {
             model_transform = model_transform.times(Mat4.translation([0,-10,-20]));
@@ -83,16 +95,12 @@ window.Project_Scene = window.classes.Project_Scene =
             this.shapes.plane.draw(graphics_state, model_transform, this.materials.back_wall);
         }
 
-        draw_room(graphics_state, model_transform){
+        draw_room(graphics_state, model_transform) {
+            this.draw_counter(graphics_state, model_transform);
             this.draw_floor(graphics_state, model_transform);
             this.draw_wall_1(graphics_state, model_transform);
             this.draw_wall_2(graphics_state, model_transform);
             this.draw_wall_3(graphics_state, model_transform);
-        }
-
-        draw_test_object(graphics_state, model_transform){
-            model_transform = model_transform.times(Mat4.translation([0,-1,0]));
-            this.shapes.person.draw(graphics_state, model_transform, this.materials.red);
         }
 
         draw_target(graphics_state, model_transform, i){
@@ -109,7 +117,11 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_crossbow(graphics_state, model_transform){
-
+            model_transform = model_transform.times(Mat4.translation([0,4,6]));
+            model_transform = model_transform.times(Mat4.rotation( .2, [0,0,-1]));
+            model_transform = model_transform.times(Mat4.rotation( -.2, [1,0,0]));
+            model_transform = model_transform.times(Mat4.rotation( .17, [0,1,0]));
+            model_transform = model_transform.times(Mat4.scale([2,2,2]));
             this.shapes.crossbow.draw(graphics_state, model_transform, this.materials.crossbow);
         }
 
@@ -120,12 +132,13 @@ window.Project_Scene = window.classes.Project_Scene =
         display(graphics_state) {
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
+            let desired = Mat4.translation([0,-1,-2]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0,0,0])));
+            graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
 
             this.draw_room(graphics_state, model_transform);
             this.draw_targets(graphics_state, model_transform);
 
-            //this.draw_test_object(graphics_state, model_transform);
             this.draw_arrow(graphics_state, model_transform);
-            // this.draw_crossbow(graphics_state, model_transform);
+            this.draw_crossbow(graphics_state, model_transform);
         }
     };
