@@ -147,6 +147,21 @@ window.Subdivision_Sphere = window.classes.Subdivision_Sphere =
     }
 
 
+window.Cube = window.classes.Cube =
+    class Cube extends Shape    // A cube inserts six square strips into its arrays.
+    { constructor()
+    { super( "positions", "normals", "texture_coords" );
+        for( var i = 0; i < 3; i++ )
+            for( var j = 0; j < 2; j++ )
+            { var square_transform = Mat4.rotation( i == 0 ? Math.PI/2 : 0, Vec.of(1, 0, 0) )
+                .times( Mat4.rotation( Math.PI * j - ( i == 1 ? Math.PI/2 : 0 ), Vec.of( 0, 1, 0 ) ) )
+                .times( Mat4.translation([ 0, 0, 1 ]) );
+                Square.insert_transformed_copy_into( this, [], square_transform );
+            }
+    }
+    }
+
+
 window.Phong_Shader = window.classes.Phong_Shader =
     class Phong_Shader extends Shader          // THE DEFAULT SHADER: This uses the Phong Reflection Model, with optional Gouraud shading.
         // Wikipedia has good defintions for these concepts.  Subclasses of class Shader each store
