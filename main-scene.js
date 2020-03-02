@@ -129,9 +129,12 @@ window.Project_Scene = window.classes.Project_Scene =
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
             let loadAngle = -pi * 0.5;
+            let maxRotation = pi / (delay / 4);
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
             // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow
+            // seems like the y translation & arrow rotation will stop earlier than when the arrow travels in the z-direction
+            // make the y translation increase slower, or delay it
 
             // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
             // use travelCap as a coordinate function z(t) that stops when z= 63, the distance to the targets
@@ -141,14 +144,14 @@ window.Project_Scene = window.classes.Project_Scene =
             }
 
             let parabola = Math.cos(pi * (travelCap / 63)); // travelCap:parabola -> begin= 0:1 & end= Cap(63): -1
-            let arrowRotation = Math.cos((pi/2)+ ((pi/4) * (travelCap / 63))); // make arrow rotate at most 45 degrees throughout flight
+            let arrowRotation = Math.cos((pi / 2) + ((maxRotation) * (travelCap / 63))); // make arrow rotate at most 45 degrees throughout flight. pi/2 is the starting angle to get values from [0, -1]
 
             if (this.launch) {
                 this.flying = true;
                 this.launch = false;
                 this.launchTime = graphics_state.animation_time;
             } else if (this.flying) {
-                model_transform = model_transform.times(Mat4.translation([0, parabola * travelCap / 3, -travelCap]));
+                model_transform = model_transform.times(Mat4.translation([0, parabola * travelCap / (delay / 5), -travelCap]));
 
                 // if arrow flies faster, then rotation should be smaller
                 // less delay = faster, so rotation should be proportional to delay
