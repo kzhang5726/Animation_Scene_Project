@@ -19,6 +19,7 @@ window.Project_Scene = window.classes.Project_Scene =
                 torus2: new (Torus.prototype.make_flat_shaded_version())(50, 50),
                 planet_1: new (Subdivision_Sphere.prototype.make_flat_shaded_version())(2),
                 planet_2: new Subdivision_Sphere(3),
+                sun: new Subdivision_Sphere(4),
                 // person: new Shape_From_File("assets/Character.obj"),
             };
             this.submit_shapes(context, shapes);
@@ -28,7 +29,6 @@ window.Project_Scene = window.classes.Project_Scene =
                     sun:  context.get_instance(Phong_Shader).material(Color.of(1,0,1,1), {ambient:1}),
                     planet1: context.get_instance(Phong_Shader).material(Color.of(0.76, 0.8, 0.85,1), {ambient:0}, {diffusivity:1}, {specularity:0}),
                     planet2: context.get_instance(Phong_Shader).material(Color.of(0.25, 0.4, 0.15,1), {ambient:0}, {diffusivity:.1}, {specularity:1}),
-
                 };
 
             this.lights = [new Light(Vec.of(5, -10, 5, 1), Color.of(0, 1, 1, 1), 1000)];
@@ -40,8 +40,12 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
 
+        draw_sun(graphics_state, model_transform,t){
+            this.shapes.sun.draw()
+        }
+
         display(graphics_state) {
             let model_transform = Mat4.identity();
-            //this.shapes.planet_1.draw(graphics_state, model_transform, this.materials.planet1);
+            let t = graphics_state.animation_time;
         }
     };
