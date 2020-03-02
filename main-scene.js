@@ -50,7 +50,6 @@ window.Project_Scene = window.classes.Project_Scene =
             this.launch = false;
             this.flying = false;
             this.launchTime = 0;
-            this.zeroHeightTime = 1000000000; //billion
         }
 
         make_control_panel() {
@@ -125,8 +124,14 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_arrow(graphics_state, model_transform) {
-            let travelTime = (graphics_state.animation_time - this.launchTime) / 25;
+            let delay = 15; // animation time is slowed by a factor of delay
+            let pi = Math.PI;
+            let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
+            let loadAngle = -pi * 0.5;
+
+            //TODO: tell kent to use variables for the coordinates of the walls/etc.
+            // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow
 
             // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
             // use travelCap as a coordinate function z(t) that stops when z= 63, the distance to the targets
@@ -135,43 +140,30 @@ window.Project_Scene = window.classes.Project_Scene =
                 travelCap = 63;
             }
 
-            let parabola = Math.cos(Math.PI * (travelCap/63)); // we want parabola to be 1 when travelCap is 0, and -1 when travelCap hits the cap
-
+            let parabola = Math.cos(pi * (travelCap / 63)); // travelCap:parabola -> begin= 0:1 & end= Cap(63): -1
+            let arrowRotation = Math.cos((pi/2)+ ((pi/4) * (travelCap / 63))); // make arrow rotate at most 45 degrees throughout flight
 
             if (this.launch) {
                 this.flying = true;
                 this.launch = false;
                 this.launchTime = graphics_state.animation_time;
             } else if (this.flying) {
-                // make arrow fly
+                model_transform = model_transform.times(Mat4.translation([0, parabola * travelCap / 3, -travelCap]));
 
-                // bound the flight, don't have >1 period
-                if (parabola == -1){
-                    // store the time(only if it hasn't been changed before)
-                    if(this.zeroHeightTime == 0) this.zeroHeightTime = travelTime;
-                }
-
-                if(travelTime > this.zeroHeightTime) {
-                    // we have already reached half a period or the "ground"
-                    model_transform = model_transform.times(Mat4.translation([0, -travelCap / 3, -travelCap]));
-                } else{
-                    // we are still a projectile
-                    model_transform = model_transform.times(Mat4.translation([0, parabola * travelCap/3, -travelCap]));
-                }
-
-                model_transform = model_transform.times(Mat4.rotation(-Math.PI * 0.6, [1, 0, 0]));
-                model_transform = model_transform.times(Mat4.scale([5,5,5]));
+                // if arrow flies faster, then rotation should be smaller
+                // less delay = faster, so rotation should be proportional to delay
+                model_transform = model_transform.times(Mat4.rotation(loadAngle + arrowRotation, [1, 0, 0]));
+                model_transform = model_transform.times(Mat4.scale([5, 5, 5]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
-                // if 5 seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
-                if (travelTime - travelCap > 40) {
+                // if x seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
+                if (travelTime - travelCap > (2 * delay)) {
                     this.flying = false;
-                    this.zeroHeightTime = 1000000000;
                 }
             } else {
                 // the arrow is still loaded
-                model_transform = model_transform.times(Mat4.rotation(-Math.PI * 0.5, [1,0,0]));
-                model_transform = model_transform.times(Mat4.scale([5,5,5]));
+                model_transform = model_transform.times(Mat4.rotation(loadAngle, [1, 0, 0]));
+                model_transform = model_transform.times(Mat4.scale([5, 5, 5]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
             }
         }
