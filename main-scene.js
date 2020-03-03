@@ -124,39 +124,42 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_arrow(graphics_state, model_transform) {
-            let delay = 15; // animation time is slowed by a factor of delay
+            let delay = 20; // animation time is slowed by a factor of delay
             let pi = Math.PI;
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
-            let loadAngle = -pi * 0.5;
-            let maxRotation = pi / (delay / 4);
+            let loadAngle = -pi/2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
+            let targetDist = 63;
+            let arrowScale = 4;
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
-            // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow
-            // seems like the y translation & arrow rotation will stop earlier than when the arrow travels in the z-direction
-            // make the y translation increase slower, or delay it
+            // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow)
+            // use temp var to store the capped value(which is calculated the moment an arrow collides with target, then use it to reset travelcap each time
+            // figure out how to adjust the distance if we turn the xbow left/right(with respect to y-axis)
 
             // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
             // use travelCap as a coordinate function z(t) that stops when z= 63, the distance to the targets
             // figure out a better way to sense contact with the targets
-            if (travelCap > 63) {
-                travelCap = 63;
+            if (travelCap > targetDist) {
+                travelCap = targetDist;
             }
 
-            let parabola = Math.cos(pi * (travelCap / 63)); // travelCap:parabola -> begin= 0:1 & end= Cap(63): -1
-            let arrowRotation = Math.cos((pi / 2) + ((maxRotation) * (travelCap / 63))); // make arrow rotate at most 45 degrees throughout flight. pi/2 is the starting angle to get values from [0, -1]
+            let maxTravel = targetDist * 1.5;
+            // end rotation should be a fraction of 90 degrees based on the current distance traveled / maximum travel distance
+            // end rotation is 90 degrees IF we travel the whole distance
+            let endRotation = (pi / 2) * (travelCap / maxTravel);
+
+            let yparabola = Math.sin((-loadAngle) + (pi * (travelCap / maxTravel))); // this gives us the sign of the y-translation throughout the entire flight
+            let arrowRotation = Math.cos((pi / 2) + ((endRotation) * (travelCap / targetDist))); // make arrow rotate at most (maxRotation) degrees throughout flight. pi/2 is the starting angle to get values from [0, -1]
 
             if (this.launch) {
                 this.flying = true;
                 this.launch = false;
                 this.launchTime = graphics_state.animation_time;
             } else if (this.flying) {
-                model_transform = model_transform.times(Mat4.translation([0, parabola * travelCap / (delay / 5), -travelCap]));
-
-                // if arrow flies faster, then rotation should be smaller
-                // less delay = faster, so rotation should be proportional to delay
+                model_transform = model_transform.times(Mat4.translation([0, yparabola * (travelCap / (-loadAngle*2)), -travelCap]));
                 model_transform = model_transform.times(Mat4.rotation(loadAngle + arrowRotation, [1, 0, 0]));
-                model_transform = model_transform.times(Mat4.scale([5, 5, 5]));
+                model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
                 // if x seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
@@ -166,7 +169,7 @@ window.Project_Scene = window.classes.Project_Scene =
             } else {
                 // the arrow is still loaded
                 model_transform = model_transform.times(Mat4.rotation(loadAngle, [1, 0, 0]));
-                model_transform = model_transform.times(Mat4.scale([5, 5, 5]));
+                model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
             }
         }
