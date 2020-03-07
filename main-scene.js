@@ -54,23 +54,31 @@ window.Project_Scene = window.classes.Project_Scene =
                 };
 
             this.lights = [new Light(Vec.of(5, -10, 5, 1), Color.of(0, 1, 1, 1), 1000)];
-            // arrow flags
+            // arrow
             this.launch = false;
             this.flying = false;
             this.launchTime = 0;
-            // crossbow flags
+            this.targetDist = 66; //57 is good when the targets slides, otherwise 66
+            this.arrow_z = 0;
+            this.collided = false;
 
+            // weapon
             this.arrow = Mat4.identity();
             this.weapon_x_position = 0;
             this.limit = false;
+
+            // targets
             this.slide = true;
             this.targetTime = 0;
+            this.xbounds = [-35, -15, -8, 8, 15, 35];
+            this.ypos = [0, 0, 0];
+
         }
 
         make_control_panel() {
             // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
             this.key_triggered_button("Launch Arrow", ["q"], () => {
-                if (!this.flying ) {
+                if (!this.flying) {
                     this.launch = true;
                 }
             });
@@ -136,7 +144,7 @@ window.Project_Scene = window.classes.Project_Scene =
             this.draw_wall_3(graphics_state, model_transform);
         }
 
-        draw_target(graphics_state, model_transform, i) {
+        draw_target(graphics_state, model_transform, xgap, yspeed) {
             // 27
             let time = graphics_state.animation_time;
 
@@ -145,21 +153,26 @@ window.Project_Scene = window.classes.Project_Scene =
             } else {
                 time = this.targetTime;
             }
-            let range = -7 + (27 * Math.sin(time / 1000));
-            // -12 is where the arrow hits the top
-            // 10 i where the arrow hits the bottom
-            // -34 is through the floor
-            // 20 is the highest they go
-            model_transform = model_transform.times(Mat4.translation([-30 + i * 30, range, -53 - (range / 4)]));
+
+            // make the range from -34(disappear through floor) to 20("disappear" through the top)
+            let range = -7 + (27 * Math.sin(time * yspeed / 1000));
+
+            // constantly store target y-positions
+            this.ypos[xgap] = range;
+
+            model_transform = model_transform.times(Mat4.translation([-30 + xgap * 30, range, -53 - (range / 4)]));
             model_transform = model_transform.times(Mat4.rotation(-.37, [1, 0, 0]));
             model_transform = model_transform.times(Mat4.scale([10, 10, .1]));
             this.shapes.target.draw(graphics_state, model_transform, this.materials.target);
         }
 
+        //TODO: make the targets randomly slide up and down, so the player has to react
+        // at most speed 3
         draw_targets(graphics_state, model_transform) {
-            this.draw_target(graphics_state, model_transform, 0);
-            this.draw_target(graphics_state, model_transform, 1);
-            this.draw_target(graphics_state, model_transform, 2);
+
+            this.draw_target(graphics_state, model_transform, 0, 1);
+            this.draw_target(graphics_state, model_transform, 1, 1);
+            this.draw_target(graphics_state, model_transform, 2, 1);
         }
 
         draw_crossbow(graphics_state, model_transform) {
@@ -170,60 +183,72 @@ window.Project_Scene = window.classes.Project_Scene =
             this.shapes.crossbow.draw(graphics_state, model_transform, this.materials.crossbow);
         }
 
+        check_collision(arrow_x, arrow_z) {
+            if (arrow_z <= -52) { // when the arrow SHOULD reach the target
+                for (let i = 0; i < 3; i++) {
+                    let index = 2 * i;
+                    if (arrow_x >= this.xbounds[index] && arrow_x <= this.xbounds[index + 1]) { // is arrow within any of target's xbounds?
+                        if (this.ypos[i] >= -10 && this.ypos[i] <= 9.25) { // are any of the targets within the range where they can be hit?
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         draw_arrow(graphics_state, model_transform) {
             let delay = 20; // animation time is slowed by a factor of delay
             let pi = Math.PI;
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
             let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
-            let targetDist = 55;
-            // 66 is the back wall distance
-            // 63 is the target dist
-            // arrow reaches -5.. play around to find the value of the tip
             let arrowScale = 2;
 
-            //TODO: tell kent to use variables for the coordinates of the walls/etc.
-            // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow)
-            // use temp var to store the capped value(which is calculated the moment an arrow collides with target, then use it to reset travelcap each time
-            // figure out how to adjust the distance if we turn the xbow left/right(with respect to y-axis)
-
-            // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
-            // use travelCap as a coordinate function z(t) that stops when z= 64, the distance to the targets
-            // figure out a better way to sense contact with the targets
-            if (travelCap > targetDist) {
-                travelCap = targetDist;
+            if(this.flying) {
+                if (!this.collided && this.check_collision(this.weapon_x_position, this.arrow_z)) {
+                    this.targetDist = travelCap; // now the arrow should stop
+                    this.collided = true;
+                }
             }
 
-            let maxTravel = targetDist * 1.5;
+            // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
+            // use travelCap as a coordinate function z(t) that stops when z= targetDist
+            if (travelCap > this.targetDist) {
+                travelCap = this.targetDist;
+            }
+
+            let maxTravel = 66 * 1.5; // 66 is back wall distance, 63 is target dist
             // end rotation should be a fraction of 90 degrees based on the current distance traveled / maximum travel distance
             // end rotation is 90 degrees IF we travel the whole distance
             let endRotation = (pi / 2) * (travelCap / maxTravel);
-
             let yparabola = Math.sin((-loadAngle) + (pi * (travelCap / maxTravel))); // this gives us the sign of the y-translation throughout the entire flight
-            let arrowRotation = Math.cos((pi / 2) + ((endRotation) * (travelCap / targetDist))); // make arrow rotate at most (maxRotation) degrees throughout flight. pi/2 is the starting angle to get values from [0, -1]
+            let arrowRotation = Math.cos((pi / 2) + ((endRotation) * (travelCap / this.targetDist))); // make arrow rotate at most (maxRotation) degrees throughout flight. pi/2 is the starting angle to get values from [0, -1]
+            this.arrow_z = 4 - travelCap;
 
             if (this.launch) {
                 this.flying = true;
                 this.launch = false;
-                this.launchTime = graphics_state.animation_time;
             } else if (this.flying) {
-                model_transform = model_transform.times(Mat4.translation([0, 5 + yparabola * (travelCap / (-loadAngle * 2)), 4 - travelCap]));
+                model_transform = model_transform.times(Mat4.translation([0, 5 + yparabola * (travelCap / (-loadAngle * 2)), this.arrow_z]));
                 model_transform = model_transform.times(Mat4.rotation(loadAngle + arrowRotation, [1, 0, 0]));
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
-                if(travelCap == targetDist){
+                if (travelCap == this.targetDist) {
                     this.slide = false;
                 }
 
                 // if x seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
                 if (travelTime - travelCap > (2 * delay)) {
-                    this.flying = false;
+                    this.flying = this.collided = false;
                     this.slide = true;
+                    this.targetDist = 66;
+                    this.arrow_y = this.arrow_z = 0;
                 }
 
-                this.arrow = model_transform.times(Mat4.rotation(Math.PI/2, [1,0,0]));
-                let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0,0,0])));
+                this.arrow = model_transform.times(Mat4.rotation(Math.PI / 2, [1, 0, 0]));
+                let desired = Mat4.translation([0, 0, -5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0, 0, 0])));
                 graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
 
             } else {
@@ -232,14 +257,15 @@ window.Project_Scene = window.classes.Project_Scene =
                 model_transform = model_transform.times(Mat4.rotation(loadAngle, [1, 0, 0]));
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
+                this.launchTime = graphics_state.animation_time; // update launchTime until it's actually launched
             }
         }
 
-        draw_weapon(graphics_state, model_transform){
+        draw_weapon(graphics_state, model_transform) {
             let neg = this.weapon_x_position > 0 ? -1 : 1;
-            model_transform = model_transform.times(Mat4.translation([this.weapon_x_position,0,0]));
-            let adjust = Math.sin(this.weapon_x_position/20);
-            model_transform = model_transform.times(Mat4.rotation(neg*0.23*(adjust**2), [0,1,0]));
+            model_transform = model_transform.times(Mat4.translation([this.weapon_x_position, 0, 0]));
+            let adjust = Math.sin(this.weapon_x_position / 20);
+            model_transform = model_transform.times(Mat4.rotation(neg * 0.23 * (adjust ** 2), [0, 1, 0]));
 
             this.draw_crossbow(graphics_state, model_transform);
             this.draw_arrow(graphics_state, model_transform);
@@ -252,8 +278,8 @@ window.Project_Scene = window.classes.Project_Scene =
             this.draw_room(graphics_state, model_transform);
             this.draw_targets(graphics_state, model_transform);
 
-            if(!this.flying){
-                let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0,-10,-10])));
+            if (!this.flying) {
+                let desired = Mat4.translation([0, 0, -5]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0, -10, -10])));
                 graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .025 ) );
             }
             this.draw_weapon(graphics_state, model_transform);
