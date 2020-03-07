@@ -10,6 +10,7 @@ window.Project_Scene = window.classes.Project_Scene =
             context.globals.graphics_state.camera_transform = Mat4.look_at(Vec.of(0, 10, 20), Vec.of(0, 0, 0), Vec.of(0, 1, 0));
             this.initial_camera_location = Mat4.inverse(context.globals.graphics_state.camera_transform);
 
+
             const r = context.width / context.height;
             context.globals.graphics_state.projection_transform = Mat4.perspective(Math.PI / 4, r, .1, 1000);
 
@@ -57,30 +58,35 @@ window.Project_Scene = window.classes.Project_Scene =
             this.launch = false;
             this.flying = false;
             this.launchTime = 0;
-
             // crossbow flags
+
+            this.arrow = Mat4.identity();
+            this.weapon_x_position = 0;
+            this.limit = false;
         }
 
         make_control_panel() {
             // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
             this.key_triggered_button("Launch Arrow", ["q"], () => {
-                if (!this.flying) {
+                if (!this.flying ) {
                     this.launch = true;
                 }
             });
 
-            this.key_triggered_button("Turn left", ["t"], () => {
-                if (!this.flying) {
-                    this.launch = true;
+            this.key_triggered_button("Go left", ["t"], () => {
+                this.limit = this.weapon_x_position < -25 ? true : false;
+
+                if (!this.flying && !this.limit) {
+                    this.weapon_x_position -= 1;
                 }
             });
 
-            this.key_triggered_button("Turn right", ["y"], () => {
-                if (!this.flying) {
-                    this.launch = true;
+            this.key_triggered_button("Go right", ["y"], () => {
+                this.limit = this.weapon_x_position > 25 ? true : false;
+                if (!this.flying && !this.limit) {
+                    this.weapon_x_position += 1;
                 }
             });
-
         }
 
         draw_counter(graphics_state, model_transform) {
@@ -150,12 +156,12 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_arrow(graphics_state, model_transform) {
-            let delay = 5; // animation time is slowed by a factor of delay
+            let delay = 20; // animation time is slowed by a factor of delay
             let pi = Math.PI;
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
             let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
-            let targetDist = 63;
+            let targetDist = 64;
             let arrowScale = 2;
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
@@ -164,7 +170,7 @@ window.Project_Scene = window.classes.Project_Scene =
             // figure out how to adjust the distance if we turn the xbow left/right(with respect to y-axis)
 
             // use travelTime as the slowed down version of time; it's always between 0 & the current amount of time the arrow flies
-            // use travelCap as a coordinate function z(t) that stops when z= 63, the distance to the targets
+            // use travelCap as a coordinate function z(t) that stops when z= 64, the distance to the targets
             // figure out a better way to sense contact with the targets
             if (travelCap > targetDist) {
                 travelCap = targetDist;
@@ -192,6 +198,11 @@ window.Project_Scene = window.classes.Project_Scene =
                 if (travelTime - travelCap > (5 * delay)) {
                     this.flying = false;
                 }
+
+                // this.arrow = model_transform.times(Mat4.rotation(Math.PI/2, [1,0,0]));
+                // let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0,0,0])));
+                // graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
+
             } else {
                 // the arrow is still loaded
                 model_transform = model_transform.times(Mat4.translation([0, 5, 4]));
@@ -201,16 +212,27 @@ window.Project_Scene = window.classes.Project_Scene =
             }
         }
 
+        draw_weapon(graphics_state, model_transform){
+            let neg = this.weapon_x_position > 0 ? -1 : 1;
+            model_transform = model_transform.times(Mat4.translation([this.weapon_x_position,0,0]));
+            let adjust = Math.sin(this.weapon_x_position/20);
+            model_transform = model_transform.times(Mat4.rotation(neg*0.23*(adjust**2), [0,1,0]));
+
+            this.draw_crossbow(graphics_state, model_transform);
+            this.draw_arrow(graphics_state, model_transform);
+        }
+
         display(graphics_state) {
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
-            let desired = Mat4.translation([0, -1, -2]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0, 0, 0])));
-            //graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
 
             this.draw_room(graphics_state, model_transform);
             this.draw_targets(graphics_state, model_transform);
 
-            this.draw_arrow(graphics_state, model_transform);
-            this.draw_crossbow(graphics_state, model_transform);
+            if(!this.flying){
+                let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0,-10,-10])));
+                graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .025 ) );
+            }
+            this.draw_weapon(graphics_state, model_transform);
         }
     };
