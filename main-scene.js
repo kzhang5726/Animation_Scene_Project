@@ -16,49 +16,43 @@ window.Project_Scene = window.classes.Project_Scene =
             const shapes = {
                 plane: new Square(),
                 floor: new Square(),
-                target: new Cube(),
-                counter: new Cube(),
+                target : new Cube(),
+                counter : new Cube(),
                 person: new Shape_From_File("assets/Character.obj"),
                 arrow: new Shape_From_File("assets/Arrow.obj"),
                 crossbow: new Shape_From_File("assets/Merciless_Crossbow.obj"),
             };
-            shapes.plane.texture_coords = shapes.plane.texture_coords.map(v => Vec.of(v[0] * 5, v[1]));
-            shapes.counter.texture_coords = shapes.counter.texture_coords.map(v => Vec.of(v[0] * 15, v[1]));
+            shapes.plane.texture_coords = shapes.plane.texture_coords.map(v => Vec.of(v[0]*5, v[1]));
+            shapes.counter.texture_coords = shapes.counter.texture_coords.map(v => Vec.of(v[0]*15, v[1]));
             this.submit_shapes(context, shapes);
 
             this.materials =
-                {
-                    ceiling: context.get_instance(Phong_Shader).material(Color.of(1, 1, 1, 1), {ambient: 1}),
-                    counter: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/brick.jpg", true)}),
-                    countertop: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/wood3.jpg", true)}),
-                    floor: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/concrete.jpg", true)}),
-                    back_wall: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/wood1.jpg", true)}),
-                    side_walls: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/wood2.jpg", true)}),
-                    target: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/target.png", true)}),
-                    crossbow: context.get_instance(Phong_Shader).material(Color.of(0, 0, 0, 1),
-                        {ambient: 1, texture: context.get_instance("assets/Merciless_Crossbow_default_01.jpg", true)}),
-                    red: context.get_instance(Phong_Shader).material(Color.of(1, 0, 0, 1), {
-                        ambient: 1,
-                        specularity: 1
-                    }),
-                    green: context.get_instance(Phong_Shader).material(Color.of(0, 1, 0, 1), {ambient: 1}),
-                    white: context.get_instance(Phong_Shader).material(Color.of(1, 1, 1, 1), {ambient: 1}),
-                    brown: context.get_instance(Phong_Shader).material(Color.of(205 / 256, 133 / 256, 63 / 256, 1), {ambient: 1}),
-                };
+            {
+                ceiling: context.get_instance( Phong_Shader ).material( Color.of( 1 ,1, 1 ,1 ), { ambient: 1 } ),
+                counter: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/brick.jpg", true)}),
+                countertop: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/wood3.jpg", true)}),
+                floor: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/concrete.jpg", true)}),
+                back_wall: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/wood1.jpg", true)}),
+                side_walls: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/wood2.jpg", true)}),
+                target: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/target.png", true)}),
+                crossbow: context.get_instance(Phong_Shader).material(Color.of(0,0,0,1),
+                    {ambient:1, texture: context.get_instance("assets/Merciless_Crossbow_default_01.jpg", true)}),
+                red:            context.get_instance( Phong_Shader ).material( Color.of( 1 ,0, 0 ,1 ), { ambient: 1 , specularity: 1} ),
+                green:          context.get_instance( Phong_Shader ).material( Color.of( 0 ,1, 0 ,1 ), { ambient: 1 } ),
+                white:          context.get_instance( Phong_Shader ).material( Color.of( 1 ,1, 1 ,1 ), { ambient: 1 } ),
+                brown:          context.get_instance( Phong_Shader ).material( Color.of( 205/256 ,133/256, 63/256 ,1 ), { ambient: 1 } ),
+            };
 
             this.lights = [new Light(Vec.of(5, -10, 5, 1), Color.of(0, 1, 1, 1), 1000)];
-            // arrow flags
             this.launch = false;
             this.flying = false;
             this.launchTime = 0;
-
-            // crossbow flags
         }
 
         make_control_panel() {
@@ -69,24 +63,12 @@ window.Project_Scene = window.classes.Project_Scene =
                 }
             });
 
-            this.key_triggered_button("Turn left", ["t"], () => {
-                if (!this.flying) {
-                    this.launch = true;
-                }
-            });
-
-            this.key_triggered_button("Turn right", ["y"], () => {
-                if (!this.flying) {
-                    this.launch = true;
-                }
-            });
-
         }
 
-        draw_counter(graphics_state, model_transform) {
-            model_transform = model_transform.times(Mat4.translation([0, 0, 5]));
-            model_transform = model_transform.times(Mat4.rotation(Math.PI / 2.5, [1, 0, 0]));
-            model_transform = model_transform.times(Mat4.scale([30, 5, 2]));
+        draw_counter(graphics_state, model_transform){
+            model_transform = model_transform.times(Mat4.translation([0,0,5]));
+            model_transform = model_transform.times(Mat4.rotation(Math.PI/2.5, [1,0,0]));
+            model_transform = model_transform.times(Mat4.scale([30,5,2]));
             this.shapes.counter.draw(graphics_state, model_transform, this.materials.counter);
         }
 
@@ -128,10 +110,10 @@ window.Project_Scene = window.classes.Project_Scene =
             this.draw_wall_3(graphics_state, model_transform);
         }
 
-        draw_target(graphics_state, model_transform, i) {
-            model_transform = model_transform.times(Mat4.translation([-30 + i * 30, -10, -60]));
-            model_transform = model_transform.times(Mat4.rotation(-.37, [1, 0, 0]));
-            model_transform = model_transform.times(Mat4.scale([10, 10, .1]));
+        draw_target(graphics_state, model_transform, i){
+            model_transform = model_transform.times(Mat4.translation([-30+ i*30,-10,-60]));
+            model_transform = model_transform.times(Mat4.rotation( -.37, [1,0,0]));
+            model_transform = model_transform.times(Mat4.scale([10,10,.1]));
             this.shapes.target.draw(graphics_state, model_transform, this.materials.target);
         }
 
@@ -141,22 +123,23 @@ window.Project_Scene = window.classes.Project_Scene =
             }
         }
 
-        draw_crossbow(graphics_state, model_transform) {
-            model_transform = model_transform.times(Mat4.translation([0, 4.5, 6]));
-            model_transform = model_transform.times(Mat4.rotation(.2, [0, 0, -1]));
-            model_transform = model_transform.times(Mat4.rotation(.22, [0, 1, 0]));
-            model_transform = model_transform.times(Mat4.scale([2, 2, 2]));
+        draw_crossbow(graphics_state, model_transform){
+            model_transform = model_transform.times(Mat4.translation([0,4,6]));
+            model_transform = model_transform.times(Mat4.rotation( .2, [0,0,-1]));
+            model_transform = model_transform.times(Mat4.rotation( -.2, [1,0,0]));
+            model_transform = model_transform.times(Mat4.rotation( .17, [0,1,0]));
+            model_transform = model_transform.times(Mat4.scale([2,2,2]));
             this.shapes.crossbow.draw(graphics_state, model_transform, this.materials.crossbow);
         }
 
         draw_arrow(graphics_state, model_transform) {
-            let delay = 5; // animation time is slowed by a factor of delay
+            let delay = 20; // animation time is slowed by a factor of delay
             let pi = Math.PI;
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
-            let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
+            let loadAngle = -pi/2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
             let targetDist = 63;
-            let arrowScale = 2;
+            let arrowScale = 4;
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
             // account for a better way to sense contact with targets(when players may adjust the angle of the crossbow)
@@ -183,18 +166,17 @@ window.Project_Scene = window.classes.Project_Scene =
                 this.launch = false;
                 this.launchTime = graphics_state.animation_time;
             } else if (this.flying) {
-                model_transform = model_transform.times(Mat4.translation([0, 5 + yparabola * (travelCap / (-loadAngle * 2)), 4 - travelCap]));
+                model_transform = model_transform.times(Mat4.translation([0, yparabola * (travelCap / (-loadAngle*2)), -travelCap]));
                 model_transform = model_transform.times(Mat4.rotation(loadAngle + arrowRotation, [1, 0, 0]));
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
                 // if x seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
-                if (travelTime - travelCap > (5 * delay)) {
+                if (travelTime - travelCap > (2 * delay)) {
                     this.flying = false;
                 }
             } else {
                 // the arrow is still loaded
-                model_transform = model_transform.times(Mat4.translation([0, 5, 4]));
                 model_transform = model_transform.times(Mat4.rotation(loadAngle, [1, 0, 0]));
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
@@ -204,8 +186,8 @@ window.Project_Scene = window.classes.Project_Scene =
         display(graphics_state) {
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
-            let desired = Mat4.translation([0, -1, -2]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0, 0, 0])));
-            //graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
+            let desired = Mat4.translation([0,-1,-2]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0,0,0])));
+            graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
 
             this.draw_room(graphics_state, model_transform);
             this.draw_targets(graphics_state, model_transform);
