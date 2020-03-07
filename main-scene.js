@@ -176,11 +176,10 @@ window.Project_Scene = window.classes.Project_Scene =
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
             let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
-            let targetDist = 64;
+            let targetDist = 55;
             // 66 is the back wall distance
             // 63 is the target dist
             // arrow reaches -5.. play around to find the value of the tip
-            let targetDist = 63;
             let arrowScale = 2;
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
@@ -223,9 +222,9 @@ window.Project_Scene = window.classes.Project_Scene =
                     this.slide = true;
                 }
 
-                // this.arrow = model_transform.times(Mat4.rotation(Math.PI/2, [1,0,0]));
-                // let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0,0,0])));
-                // graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
+                this.arrow = model_transform.times(Mat4.rotation(Math.PI/2, [1,0,0]));
+                let desired = Mat4.translation([0,0,-5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0,0,0])));
+                graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
 
             } else {
                 // the arrow is still loaded
