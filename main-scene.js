@@ -63,6 +63,8 @@ window.Project_Scene = window.classes.Project_Scene =
             this.arrow = Mat4.identity();
             this.weapon_x_position = 0;
             this.limit = false;
+            this.slide = true;
+            this.targetTime = 0;
         }
 
         make_control_panel() {
@@ -120,8 +122,8 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_wall_3(graphics_state, model_transform) {
-            model_transform = model_transform.times(Mat4.translation([0, 0, -70]));
-            model_transform = model_transform.times(Mat4.rotation(-.3, [1, 0, 0]));
+            model_transform = model_transform.times(Mat4.translation([0, 0, -64]));
+            model_transform = model_transform.times(Mat4.rotation(-0.25, [1, 0, 0]));
             model_transform = model_transform.times(Mat4.scale([50, 50, 50]));
             this.shapes.plane.draw(graphics_state, model_transform, this.materials.back_wall);
         }
@@ -135,16 +137,29 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_target(graphics_state, model_transform, i) {
-            model_transform = model_transform.times(Mat4.translation([-30 + i * 30, -10, -60]));
+            // 27
+            let time = graphics_state.animation_time;
+
+            if (this.slide) {
+                this.targetTime = time;
+            } else {
+                time = this.targetTime;
+            }
+            let range = -7 + (27 * Math.sin(time / 1000));
+            // -12 is where the arrow hits the top
+            // 10 i where the arrow hits the bottom
+            // -34 is through the floor
+            // 20 is the highest they go
+            model_transform = model_transform.times(Mat4.translation([-30 + i * 30, range, -53 - (range / 4)]));
             model_transform = model_transform.times(Mat4.rotation(-.37, [1, 0, 0]));
             model_transform = model_transform.times(Mat4.scale([10, 10, .1]));
             this.shapes.target.draw(graphics_state, model_transform, this.materials.target);
         }
 
         draw_targets(graphics_state, model_transform) {
-            for (let i = 0; i < 3; i++) {
-                this.draw_target(graphics_state, model_transform, i);
-            }
+            this.draw_target(graphics_state, model_transform, 0);
+            this.draw_target(graphics_state, model_transform, 1);
+            this.draw_target(graphics_state, model_transform, 2);
         }
 
         draw_crossbow(graphics_state, model_transform) {
@@ -162,6 +177,10 @@ window.Project_Scene = window.classes.Project_Scene =
             let travelCap = travelTime;
             let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
             let targetDist = 64;
+            // 66 is the back wall distance
+            // 63 is the target dist
+            // arrow reaches -5.. play around to find the value of the tip
+            let targetDist = 63;
             let arrowScale = 2;
 
             //TODO: tell kent to use variables for the coordinates of the walls/etc.
@@ -194,9 +213,14 @@ window.Project_Scene = window.classes.Project_Scene =
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
+                if(travelCap == targetDist){
+                    this.slide = false;
+                }
+
                 // if x seconds passed after we hit the travel cap(when the arrow hits the target), then let the player launch another arrow, so reset variables
-                if (travelTime - travelCap > (5 * delay)) {
+                if (travelTime - travelCap > (2 * delay)) {
                     this.flying = false;
+                    this.slide = true;
                 }
 
                 // this.arrow = model_transform.times(Mat4.rotation(Math.PI/2, [1,0,0]));
