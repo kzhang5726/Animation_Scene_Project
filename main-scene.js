@@ -58,7 +58,7 @@ window.Project_Scene = window.classes.Project_Scene =
             this.launch = false;
             this.flying = false;
             this.launchTime = 0;
-            this.targetDist = 66; //57 is good when the targets slides, otherwise 66
+            this.targetDist = 66;
             this.arrow_z = 0;
             this.collided = false;
 
@@ -72,6 +72,10 @@ window.Project_Scene = window.classes.Project_Scene =
             this.targetTime = 0;
             this.xbounds = [-35, -15, -8, 8, 15, 35];
             this.ypos = [0, 0, 0];
+            this.targetAppears = [true, true, true];
+            this.targetDestroyed = [false, false, false];
+            this.targetSpeed = [1, 1, 1];
+
 
         }
 
@@ -166,13 +170,14 @@ window.Project_Scene = window.classes.Project_Scene =
             this.shapes.target.draw(graphics_state, model_transform, this.materials.target);
         }
 
-        //TODO: make the targets randomly slide up and down, so the player has to react
-        // at most speed 3
         draw_targets(graphics_state, model_transform) {
-
-            this.draw_target(graphics_state, model_transform, 0, 1);
-            this.draw_target(graphics_state, model_transform, 1, 1);
-            this.draw_target(graphics_state, model_transform, 2, 1);
+            for (let i = 0; i < 3; i++) {
+                if (this.targetAppears[i]) {
+                    this.draw_target(graphics_state, model_transform, i, this.targetSpeed[i]);
+                } else{
+                    this.targetAppears[i] = true; // the target was destroyed so respawn it
+                }
+            }
         }
 
         draw_crossbow(graphics_state, model_transform) {
@@ -189,6 +194,7 @@ window.Project_Scene = window.classes.Project_Scene =
                     let index = 2 * i;
                     if (arrow_x >= this.xbounds[index] && arrow_x <= this.xbounds[index + 1]) { // is arrow within any of target's xbounds?
                         if (this.ypos[i] >= -10 && this.ypos[i] <= 9.25) { // are any of the targets within the range where they can be hit?
+                            this.targetDestroyed[i] = true; // destroy the target
                             return true;
                         }
                     }
@@ -198,14 +204,14 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         draw_arrow(graphics_state, model_transform) {
-            let delay = 20; // animation time is slowed by a factor of delay
+            let delay = 15; // animation time is slowed by a factor of delay
             let pi = Math.PI;
             let travelTime = (graphics_state.animation_time - this.launchTime) / delay;
             let travelCap = travelTime;
             let loadAngle = -pi / 2; // the load angle is off because arrow originally is drawn pointing backwards, so we had to angle it in the - direction(clockwise around the x-axis)
             let arrowScale = 2;
 
-            if(this.flying) {
+            if (this.flying) {
                 if (!this.collided && this.check_collision(this.weapon_x_position, this.arrow_z)) {
                     this.targetDist = travelCap; // now the arrow should stop
                     this.collided = true;
@@ -245,11 +251,18 @@ window.Project_Scene = window.classes.Project_Scene =
                     this.slide = true;
                     this.targetDist = 66;
                     this.arrow_y = this.arrow_z = 0;
+                    for (let i = 0; i < 3; i++) {
+                        if (this.targetDestroyed[i]) {
+                            this.targetAppears[i] = false;
+                            this.targetDestroyed[i] = false;
+                            this.targetSpeed[i] = 1 + Math.random() * 3; // give the target a random speed upon respawning
+                        }
+                    }
                 }
 
                 this.arrow = model_transform.times(Mat4.rotation(Math.PI / 2, [1, 0, 0]));
                 let desired = Mat4.translation([0, 0, -5]).times(Mat4.inverse(this.arrow).times(Mat4.translation([0, 0, 0])));
-                graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .1 ) );
+                graphics_state.camera_transform = desired.map((x, i) => Vec.from(graphics_state.camera_transform[i]).mix(x, .1));
 
             } else {
                 // the arrow is still loaded
@@ -280,7 +293,7 @@ window.Project_Scene = window.classes.Project_Scene =
 
             if (!this.flying) {
                 let desired = Mat4.translation([0, 0, -5]).times(Mat4.inverse(this.initial_camera_location).times(Mat4.translation([0, -10, -10])));
-                graphics_state.camera_transform = desired.map( (x,i) => Vec.from( graphics_state.camera_transform[i] ).mix( x, .025 ) );
+                graphics_state.camera_transform = desired.map((x, i) => Vec.from(graphics_state.camera_transform[i]).mix(x, .025));
             }
             this.draw_weapon(graphics_state, model_transform);
         }
