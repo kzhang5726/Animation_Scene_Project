@@ -53,6 +53,14 @@ window.Project_Scene = window.classes.Project_Scene =
                     brown: context.get_instance(Phong_Shader).material(Color.of(205 / 256, 133 / 256, 63 / 256, 1), {ambient: 1}),
                 };
 
+            this.sounds = {
+                arrow : new Audio("./assets/Arrow_Shot.mp4"),
+                poggers: new Audio( "./assets/poggers.m4a"),
+                music: new Audio("./assets/174Abgm.mp3"),
+                weapon: new Audio("./assets/move_weapon.mp3"),
+                miss: new Audio("./assets/miss_target.mp3"),
+            }
+
             this.lights = [new Light(Vec.of(5, -10, 5, 1), Color.of(0, 1, 1, 1), 1000)];
             // arrow
             this.launch = false;
@@ -76,7 +84,7 @@ window.Project_Scene = window.classes.Project_Scene =
             this.targetDestroyed = [false, false, false];
             this.targetSpeed = [1, 1, 1];
 
-
+            this.score = 0;
         }
 
         make_control_panel() {
@@ -85,14 +93,15 @@ window.Project_Scene = window.classes.Project_Scene =
                 if (!this.flying) {
                     this.launch = true;
                 }
+                this.play_arrow_sound();
             });
 
             this.key_triggered_button("Go left", ["t"], () => {
                 this.limit = this.weapon_x_position < -25 ? true : false;
-
                 if (!this.flying && !this.limit) {
                     this.weapon_x_position -= 1;
                 }
+                this.sounds.weapon.play();
             });
 
             this.key_triggered_button("Go right", ["y"], () => {
@@ -100,7 +109,12 @@ window.Project_Scene = window.classes.Project_Scene =
                 if (!this.flying && !this.limit) {
                     this.weapon_x_position += 1;
                 }
+                this.sounds.weapon.play();
             });
+        }
+
+        play_arrow_sound(){
+            this.sounds.arrow.play();
         }
 
         draw_counter(graphics_state, model_transform) {
@@ -213,6 +227,7 @@ window.Project_Scene = window.classes.Project_Scene =
 
             if (this.flying) {
                 if (!this.collided && this.check_collision(this.weapon_x_position, this.arrow_z)) {
+                    this.sounds.poggers.play();
                     this.targetDist = travelCap; // now the arrow should stop
                     this.collided = true;
                 }
@@ -255,6 +270,8 @@ window.Project_Scene = window.classes.Project_Scene =
                         if (this.targetDestroyed[i]) {
                             this.targetAppears[i] = false;
                             this.targetDestroyed[i] = false;
+                            this.score += 1;
+                            document.getElementById("sc").innerHTML = "Score: " + this.score.toString();
                             this.targetSpeed[i] = 1 + Math.random() * 3; // give the target a random speed upon respawning
                         }
                     }
@@ -287,7 +304,6 @@ window.Project_Scene = window.classes.Project_Scene =
         display(graphics_state) {
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
-
             this.draw_room(graphics_state, model_transform);
             this.draw_targets(graphics_state, model_transform);
 
