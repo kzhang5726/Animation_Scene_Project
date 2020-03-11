@@ -54,9 +54,9 @@ window.Project_Scene = window.classes.Project_Scene =
                 };
 
             this.sounds = {
-                arrow : new Audio("./assets/Arrow_Shot.mp4"),
-                poggers: new Audio( "./assets/poggers.m4a"),
-                music: new Audio("./assets/174Abgm.mp3"),
+                arrow: new Audio("./assets/Arrow_Shot.mp4"),
+                poggers: new Audio("./assets/poggers.m4a"),
+                music: new Audio("./assets/bgm.mp3"),
                 weapon: new Audio("./assets/move_weapon.mp3"),
                 miss: new Audio("./assets/miss_target.mp3"),
             }
@@ -84,7 +84,11 @@ window.Project_Scene = window.classes.Project_Scene =
             this.targetDestroyed = [false, false, false];
             this.targetSpeed = [1, 1, 1];
 
+            //scores
             this.score = 0;
+
+            // music
+            this.lastPlayed = 0;
         }
 
         make_control_panel() {
@@ -92,29 +96,25 @@ window.Project_Scene = window.classes.Project_Scene =
             this.key_triggered_button("Launch Arrow", ["q"], () => {
                 if (!this.flying) {
                     this.launch = true;
+                    this.sounds.arrow.play();
                 }
-                this.play_arrow_sound();
             });
 
             this.key_triggered_button("Go left", ["t"], () => {
                 this.limit = this.weapon_x_position < -25 ? true : false;
                 if (!this.flying && !this.limit) {
                     this.weapon_x_position -= 1;
+                    this.sounds.weapon.play();
                 }
-                this.sounds.weapon.play();
             });
 
             this.key_triggered_button("Go right", ["y"], () => {
                 this.limit = this.weapon_x_position > 25 ? true : false;
                 if (!this.flying && !this.limit) {
                     this.weapon_x_position += 1;
+                    this.sounds.weapon.play();
                 }
-                this.sounds.weapon.play();
             });
-        }
-
-        play_arrow_sound(){
-            this.sounds.arrow.play();
         }
 
         draw_counter(graphics_state, model_transform) {
@@ -188,7 +188,7 @@ window.Project_Scene = window.classes.Project_Scene =
             for (let i = 0; i < 3; i++) {
                 if (this.targetAppears[i]) {
                     this.draw_target(graphics_state, model_transform, i, this.targetSpeed[i]);
-                } else{
+                } else {
                     this.targetAppears[i] = true; // the target was destroyed so respawn it
                 }
             }
@@ -256,7 +256,10 @@ window.Project_Scene = window.classes.Project_Scene =
                 model_transform = model_transform.times(Mat4.scale([arrowScale, arrowScale, arrowScale]));
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
-                if (travelCap == this.targetDist) {
+                if (travelCap == this.targetDist) { // when the arrow stops
+                    if(this.targetDist == 66){
+                        this.sounds.miss.play();
+                    }
                     this.slide = false;
                 }
 
@@ -270,7 +273,8 @@ window.Project_Scene = window.classes.Project_Scene =
                         if (this.targetDestroyed[i]) {
                             this.targetAppears[i] = false;
                             this.targetDestroyed[i] = false;
-                            this.score += 1;
+                            this.score += this.targetSpeed[i];
+                            this.score = parseFloat(this.score.toPrecision(3));
                             document.getElementById("sc").innerHTML = "Score: " + this.score.toString();
                             this.targetSpeed[i] = 1 + Math.random() * 3; // give the target a random speed upon respawning
                         }
@@ -302,6 +306,14 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         display(graphics_state) {
+            /*
+            if (this.lastPlayed == 0) {
+                this.sounds.music.play(); // when we first start
+            } else if (graphics_state.animation_time - this.lastPlayed >= 45) {
+                this.lastPlayed = graphics_state.animation_time;
+                this.sounds.music.play();
+            }
+            */
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
             this.draw_room(graphics_state, model_transform);
