@@ -54,7 +54,7 @@ window.Project_Scene = window.classes.Project_Scene =
                 };
 
             this.sounds = {
-                arrow: new Audio("./assets/Arrow_Shot.mp4"),
+                arrow: new Audio("./assets/arrow_shot.mp3"),
                 poggers: new Audio("./assets/poggers.m4a"),
                 music: new Audio("./assets/bgm.mp3"),
                 weapon: new Audio("./assets/move_weapon.mp3"),
@@ -86,6 +86,7 @@ window.Project_Scene = window.classes.Project_Scene =
 
             //scores
             this.score = 0;
+            this.highestScore = 0;
 
             // music
             this.lastPlayed = 0;
@@ -257,7 +258,7 @@ window.Project_Scene = window.classes.Project_Scene =
                 this.shapes.arrow.draw(graphics_state, model_transform, this.materials.red);
 
                 if (travelCap == this.targetDist) { // when the arrow stops
-                    if(this.targetDist == 66){
+                    if (this.targetDist == 66) {
                         this.sounds.miss.play();
                     }
                     this.slide = false;
@@ -267,18 +268,24 @@ window.Project_Scene = window.classes.Project_Scene =
                 if (travelTime - travelCap > (2 * delay)) {
                     this.flying = this.collided = false;
                     this.slide = true;
-                    this.targetDist = 66;
                     this.arrow_y = this.arrow_z = 0;
-                    for (let i = 0; i < 3; i++) {
-                        if (this.targetDestroyed[i]) {
-                            this.targetAppears[i] = false;
-                            this.targetDestroyed[i] = false;
-                            this.score += this.targetSpeed[i];
-                            this.score = parseFloat(this.score.toPrecision(3));
-                            document.getElementById("sc").innerHTML = "Score: " + this.score.toString();
-                            this.targetSpeed[i] = 1 + Math.random() * 3; // give the target a random speed upon respawning
+                    if (this.targetDist != 66) {
+                        for (let i = 0; i < 3; i++) {
+                            if (this.targetDestroyed[i]) {
+                                this.targetAppears[i] = false;
+                                this.targetDestroyed[i] = false;
+                                this.score += this.targetSpeed[i];
+                                this.score = parseFloat(this.score.toPrecision(3));
+                                this.targetSpeed[i] = 1 + Math.random() * 3; // give the target a random speed upon respawning
+                                break;
+                            }
                         }
+                    } else {
+                        this.score -= 1;
+                        this.score = parseFloat(this.score.toPrecision(3));
                     }
+                    this.targetDist = 66; //reset the max arrow distance
+                    // document.getElementById("sc").innerHTML = "Score: " + this.score.toString();
                 }
 
                 this.arrow = model_transform.times(Mat4.rotation(Math.PI / 2, [1, 0, 0]));
@@ -306,14 +313,18 @@ window.Project_Scene = window.classes.Project_Scene =
         }
 
         display(graphics_state) {
-            /*
-            if (this.lastPlayed == 0) {
-                this.sounds.music.play(); // when we first start
-            } else if (graphics_state.animation_time - this.lastPlayed >= 45) {
+            this.sounds.music.play();
+
+            if ((graphics_state.animation_time - this.lastPlayed)/1000 >= 46) { // /1000 to get real time seconds
                 this.lastPlayed = graphics_state.animation_time;
-                this.sounds.music.play();
+                if(this.score > this.highestScore){
+                    this.highestScore = this.score;
+                }
+                this.score = 0;
             }
-            */
+            document.getElementById("score").innerHTML = "Score: " + this.score.toString();
+            document.getElementById("old").innerHTML = "Highest: " + this.highestScore.toString();
+
             let model_transform = Mat4.identity();
             let t = graphics_state.animation_time;
             this.draw_room(graphics_state, model_transform);

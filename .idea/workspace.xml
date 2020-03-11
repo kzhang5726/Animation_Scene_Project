@@ -38,7 +38,7 @@
       <updated>1583885443407</updated>
       <workItem from="1583885447339" duration="1097000" />
       <workItem from="1583891839995" duration="2372000" />
-      <workItem from="1583895305218" duration="665000" />
+      <workItem from="1583895305218" duration="6173000" />
     </task>
     <servers />
   </component>
@@ -46,6 +46,10 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
+    <state x="719" y="188" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1583897058091">
+      <screen x="0" y="40" width="1280" height="680" />
+    </state>
+    <state x="719" y="188" key="#com.intellij.fileTypes.FileTypeChooser/0.40.1280.680@0.40.1280.680" timestamp="1583897058091" />
     <state x="652" y="298" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1583894435561">
       <screen x="0" y="40" width="1280" height="680" />
     </state>
